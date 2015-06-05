@@ -91,6 +91,8 @@
                 submenuSelector: "*",
                 submenuDirection: "right",
                 tolerance: 75,  // bigger = more forgivey when entering submenu
+                delay: 300, // ms delay when user appears to be entering submenu
+                speedLimit: 3, // px per interval of movement to consider moving
                 enter: $.noop,
                 exit: $.noop,
                 activate: $.noop,
@@ -98,8 +100,7 @@
                 exitMenu: $.noop
             }, opts);
 
-        var MOUSE_LOCS_TRACKED = 3,  // number of past mouse locations to track
-            DELAY = 300;  // ms delay when user appears to be entering submenu
+        var MOUSE_LOCS_TRACKED = 3;  // number of past mouse locations to track
 
         /**
          * Keep track of the last few locations of the mouse.
@@ -223,20 +224,22 @@
                 }
 
                 var offset = $menu.offset(),
+                    menuWidth = $menu.outerWidth(),
+                    menuHeight = $menu.outerHeight(),
                     upperLeft = {
                         x: offset.left,
                         y: offset.top - options.tolerance
                     },
                     upperRight = {
-                        x: offset.left + $menu.outerWidth(),
+                        x: offset.left + menuWidth,
                         y: upperLeft.y
                     },
                     lowerLeft = {
                         x: offset.left,
-                        y: offset.top + $menu.outerHeight() + options.tolerance
+                        y: offset.top + menuHeight + options.tolerance
                     },
                     lowerRight = {
-                        x: offset.left + $menu.outerWidth(),
+                        x: offset.left + menuWidth,
                         y: lowerLeft.y
                     },
                     loc = mouseLocs[mouseLocs.length - 1],
@@ -318,8 +321,17 @@
                     // Mouse is moving from previous location towards the
                     // currently activated submenu. Delay before activating a
                     // new menu row, because user may be moving into submenu.
+
+                    var dx = loc.x - prevLoc.x,
+                        dy = loc.y - prevLoc.y,
+                        speed = Math.sqrt(dx * dx + dy * dy);
+                    if (speed < options.speedLimit) {
+                        lastDelayLoc = null;
+                        return 0;
+                    }
+
                     lastDelayLoc = loc;
-                    return DELAY;
+                    return options.delay;
                 }
 
                 lastDelayLoc = null;
